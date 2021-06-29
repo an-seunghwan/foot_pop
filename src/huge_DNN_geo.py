@@ -1,10 +1,3 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Wed Jun 10 12:46:59 2020
-
-@author: UOS
-"""
-
 #%%
 import tensorflow as tf
 from tensorflow.keras import layers
@@ -16,9 +9,11 @@ import numpy as np
 import pandas as pd
 import os
 #%% path
+os.chdir("/Users/anseunghwan/Documents/GitHub/floating_pop")
+data_directory = '/Users/anseunghwan/Documents/GitHub/floating_pop_data'
 #%% Load data
-df = pd.read_csv('covid_all_data수정.csv', encoding='cp949')
-df_district = pd.read_csv('행정동좌표.csv', encoding='cp949')
+df = pd.read_csv(data_directory + '/covid_all_data수정.csv', encoding='cp949')
+df_district = pd.read_csv(data_directory + '/행정동좌표.csv', encoding='cp949')
 
 # train, test 데이터 분할
 split = StratifiedShuffleSplit(n_splits=1, test_size=0.3, random_state=528)

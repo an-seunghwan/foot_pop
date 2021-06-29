@@ -1,10 +1,4 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Wed Jun 10 12:46:59 2020
-
-@author: UOS
-"""
-
 #%%
 import tensorflow as tf
 from tensorflow.keras import layers
@@ -15,11 +9,12 @@ from sklearn.neighbors import kneighbors_graph
 import numpy as np
 import pandas as pd
 import os
+
+os.chdir("/Users/anseunghwan/Documents/GitHub/floating_pop")
+data_directory = '/Users/anseunghwan/Documents/GitHub/floating_pop_data'
 #%%
-os.chdir("C:\\Users\\UOS\\Desktop\\빅데이터 연구소\\유동인구\\data")
-#%%
-df_20 = pd.read_csv('covid_all_data20ver2.csv', encoding='cp949')
-df_district = pd.read_csv('행정동좌표.csv', encoding='cp949')
+df_20 = pd.read_csv(data_directory + '/covid_all_data20ver2.csv', encoding='cp949')
+df_district = pd.read_csv(data_directory + '/행정동좌표.csv', encoding='cp949')
 # train, test 데이터 분할
 split = StratifiedShuffleSplit(n_splits=1, test_size=0.3, random_state=528)
 
@@ -279,8 +274,8 @@ for i, j in zip(simul_corona, simul_corona_num):
 
     result.to_csv('result20s_week'+ str(i) + '_' + str(j) + '_v4.csv', index=False, encoding='utf-8')
 #%%
-df_60 = pd.read_csv('covid_all_data60ver2.csv', encoding='cp949')
-df_district = pd.read_csv('행정동좌표.csv', encoding='cp949')
+df_60 = pd.read_csv(data_directory + '/covid_all_data60ver2.csv', encoding='cp949')
+df_district = pd.read_csv(data_directory + '/행정동좌표.csv', encoding='cp949')
 # train, test 데이터 분할
 split = StratifiedShuffleSplit(n_splits=1, test_size=0.3, random_state=528)
 
