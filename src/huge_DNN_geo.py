@@ -14,7 +14,11 @@ data_directory = '/Users/anseunghwan/Documents/GitHub/floating_pop_data'
 #%% Load data
 df = pd.read_csv(data_directory + '/covid_all_data수정.csv', encoding='cp949')
 df_district = pd.read_csv(data_directory + '/행정동좌표.csv', encoding='cp949')
-
+df.columns
+df.head()
+#%%
+np.linalg.inv(np.eye(10) - np.eye(11)[:, 1:][:10, :])
+#%%
 # train, test 데이터 분할
 split = StratifiedShuffleSplit(n_splits=1, test_size=0.3, random_state=528)
 
