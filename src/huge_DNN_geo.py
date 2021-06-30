@@ -4,23 +4,23 @@ from tensorflow.keras import layers
 from sklearn.model_selection import StratifiedShuffleSplit
 from sklearn.neighbors import kneighbors_graph
 # from matplotlib import pyplot as plt
-#%% 
+#%%
 import numpy as np
 import pandas as pd
 import os
 #%% path
-os.chdir("/Users/anseunghwan/Documents/GitHub/floating_pop")
-data_directory = '/Users/anseunghwan/Documents/GitHub/floating_pop_data'
+# os.chdir("/Users/anseunghwan/Documents/GitHub/floating_pop")
+# data_directory = '/Users/anseunghwan/Documents/GitHub/floating_pop_data'
+os.chdir(r"D:\foot_pop")
+data_directory = r"D:\foot_pop_data"
 #%% Load data
 df = pd.read_csv(data_directory + '/covid_all_data수정.csv', encoding='cp949')
 df_district = pd.read_csv(data_directory + '/행정동좌표.csv', encoding='cp949')
 df.columns
 df.head()
 #%%
-np.linalg.inv(np.eye(10) - np.eye(11)[:, 1:][:10, :])
-#%%
 # train, test 데이터 분할
-split = StratifiedShuffleSplit(n_splits=1, test_size=0.3, random_state=528)
+split = StratifiedShuffleSplit(n_splits=1, test_size=0.3, random_state=1)
 
 for train_idx, test_idx in split.split(df, df.loc[:,['행정동코드', 'corona']]):
     df_train = df.loc[train_idx]
@@ -38,7 +38,7 @@ squ_sd = df_train['동별면적'].std()
 # 행정동 코드와 고유번호 태깅   
 M = df.iloc[:, 1].unique().shape[0] # 행정동 개수 
 admin_dict = {key:val for key, val in enumerate(df.iloc[:, 1].unique())}
-#%% Function pop_prepro
+#%% 전처리
 def pop_prepro(df, admin_dict, temp_mean, temp_sd, dust_mean, dust_sd, squ_mean, squ_sd):
     df_ = df.iloc[:,3:17]
     df_.columns = ['day', 'hol', 'time', 'avg_temp', 'avg_moi', 'month', 'dust', 'id_pop', 'corp', 'worker', 'square', 'y', 'corona', 'crn_count']
@@ -98,12 +98,17 @@ def pop_prepro(df, admin_dict, temp_mean, temp_sd, dust_mean, dust_sd, squ_mean,
     y_ = [y[df.iloc[:, 1] == admin_dict.get(i)] for i in range(M)]
 
     return comm_data, spec_data, y_
-#%% comm_data, spec_data, y 
+#%% 
+'''
+comm_data: 공통 데이터
+spec_data: 각 행정동별 데이터
+y: 유동인구
+'''
 comm_data, spec_data, y = pop_prepro(df_train, admin_dict, temp_mean, temp_sd, dust_mean, dust_sd, squ_mean, squ_sd)
 #%% Adjacency matrix 
 coord = df_district.loc[:,['위도', '경도']].to_numpy()
 
-adj_mat_ = kneighbors_graph(coord, 100, mode='connectivity', include_self=True)
+adj_mat_ = kneighbors_graph(coord, 50, mode='connectivity', include_self=True)
 adj_mat = adj_mat_.toarray()
 
 adj_mat = tf.convert_to_tensor(adj_mat, dtype=tf.float32)
@@ -112,7 +117,7 @@ x_input = spec_data
 shared_x_input = comm_data
 n = df_train.shape[0] 
 
-# hidden layer output shape
+# hidden layer unit 
 d1 = 49
 d2 = 30 
 d3 = 20
