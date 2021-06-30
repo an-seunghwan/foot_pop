@@ -28,7 +28,7 @@ df_district = pd.read_csv(data_directory + '/행정동좌표.csv', encoding='cp9
 df.columns
 df.head()
 #%%
-# train, test 데이터 분할
+print('train, test 데이터 분할')
 split = StratifiedShuffleSplit(n_splits=1, test_size=0.3, random_state=1)
 
 for train_idx, test_idx in split.split(df, df.loc[:,['행정동코드', 'corona']]):
@@ -113,6 +113,7 @@ comm_data: 공통 데이터
 spec_data: 각 행정동별 데이터
 y: 유동인구
 '''
+print('전처리')
 comm_data, spec_data, y = pop_prepro(df_train, admin_dict, temp_mean, temp_sd, dust_mean, dust_sd, squ_mean, squ_sd)
 #%% Adjacency matrix 
 coord = df_district.loc[:,['위도', '경도']].to_numpy()
@@ -180,7 +181,8 @@ def loss_fun(y, y_pred):
     for i in range(M):
         loss_ = loss_ + tf.math.reduce_sum(tf.math.square(tf.cast(tf.squeeze(y[i]), tf.float32) - tf.cast(y_pred[i], tf.float32)))
     return loss_ 
-#%% Train model
+#%% 
+print('Training model')
 lr = 0.001
 optimizer = K.optimizers.Adam(learning_rate=lr)
 epochs = 1000
