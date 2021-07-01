@@ -16,6 +16,7 @@ from sklearn.neighbors import kneighbors_graph
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
+import matplotlib.pyplot as plt
 import os
 #%% path
 # os.chdir("/Users/anseunghwan/Documents/GitHub/floating_pop")
@@ -183,11 +184,11 @@ def loss_fun(y, y_pred):
     return loss_ 
 #%% 
 print('Training model')
-lr = 0.001
+lr = 0.0002
 optimizer = K.optimizers.Adam(learning_rate=lr)
-epochs = 1000
-batch_size = 128
-history = []
+epochs = 100
+batch_size = 1024
+loss_history = []
 for i in range(epochs):
     idx = np.random.choice(range(x_input[0].shape[0]), batch_size)
     x_batch = [x[idx] for x in x_input]
@@ -201,7 +202,9 @@ for i in range(epochs):
     
     if (i+1) % 10 == 0:
         print(i+1,'iter loss:', loss.numpy()) 
-    history.append(loss.numpy())
+    loss_history.append(loss.numpy())
+#%% weights save   
+model.save_weights('./assets/weights_210630/weights')
 #%%
 fig, ax = plt.subplots(figsize=(9, 4))
 ax.plot(loss_history)
@@ -209,8 +212,6 @@ ax.set_title('loss')
 plt.savefig('./assets/loss.png')
 # plt.show()
 plt.close()
-#%% weights save   
-model.save_weights('./assets/weights_210630/weights')
 #%% load model
 input_layer = [layers.Input(x_input[0].shape[1]) for _ in range(M)]
 shared_input_layer = [layers.Input(shared_x_input[0].shape[1]) for _ in range(M)]
