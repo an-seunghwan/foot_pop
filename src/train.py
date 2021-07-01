@@ -243,7 +243,7 @@ test_input = spec_test
 # '''log 변환'''
 # y_test = [np.log(y_test[i] + 1e-8) for i in range(M)]
 
-test_pred = model([test_input, shared_test_input])
+test_pred = model.predict([test_input, shared_test_input])
 
 print('test dataset loss:', (loss_fun(test_pred, y_test)).numpy())
 #%%
