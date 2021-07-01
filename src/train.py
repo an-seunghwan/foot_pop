@@ -87,8 +87,8 @@ def pop_prepro(df, admin_dict, temp_mean, temp_sd, dust_mean, dust_sd, squ_mean,
     # 면적 정규화
     df_['square'] = (df_['square'] - squ_mean)/squ_sd
 
-    # 유동인구 천단위로 변경
-    df_['y'] = df_['y']/1000
+    # 유동인구 만단위로 변경
+    df_['y'] = df_['y']/10000
     
     df_['crn_count'] = df_['crn_count']/10
     
