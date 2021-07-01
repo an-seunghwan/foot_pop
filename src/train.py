@@ -180,13 +180,13 @@ model.summary()
 def loss_fun(y, y_pred):
     loss_ = 0
     for i in range(M):
-        loss_ = loss_ + tf.math.reduce_sum(tf.math.square(tf.cast(tf.squeeze(y[i]), tf.float32) - tf.cast(y_pred[i], tf.float32)))
+        loss_ = loss_ + tf.math.reduce_mean(tf.math.square(tf.cast(tf.squeeze(y[i]), tf.float32) - tf.cast(y_pred[i], tf.float32)))
     return loss_ 
 #%% 
 print('Training model')
-lr = 0.0002
+lr = 0.001
 optimizer = K.optimizers.Adam(learning_rate=lr)
-epochs = 100
+epochs = 500
 batch_size = 1024
 loss_history = []
 for i in range(epochs):
@@ -196,7 +196,7 @@ for i in range(epochs):
     y_batch = [y_[idx] for y_ in y]
     with tf.GradientTape() as tape:
         y_pred = model([x_batch, shared_x_batch])
-        loss = loss_fun(y_batch, y_pred) / batch_size
+        loss = loss_fun(y_batch, y_pred)
     grads = tape.gradient(loss, model.trainable_weights)
     optimizer.apply_gradients(zip(grads, model.trainable_weights)) 
     
@@ -204,7 +204,9 @@ for i in range(epochs):
         print(i+1,'iter loss:', loss.numpy()) 
     loss_history.append(loss.numpy())
 #%% weights save   
-model.save_weights('./assets/weights_210630/weights')
+from datetime import datetime
+date = datetime.today().strftime("%Y%m%d")
+model.save_weights('./assets/weights_{}/weights'.format(date))
 #%%
 fig, ax = plt.subplots(figsize=(9, 4))
 ax.plot(loss_history)
@@ -252,16 +254,18 @@ output_layers = [layers.Dense(1) for _ in range(M)]
 output = [d(h) for d, h in zip(output_layers, do3)]
 
 model = K.Model(inputs=[input_layer, shared_input_layer], outputs=output)
-
-model.load_weights('./assets/weights_210630/weights')
+#%%
+date = datetime.today().strftime("%Y%m%d")
+model.load_weights('./assets/weights_{}/weights'.format(date))
 #%% Test
 comm_test, spec_test, y_test = pop_prepro(df_test, admin_dict, temp_mean, temp_sd, dust_mean, dust_sd, squ_mean, squ_sd)
 
 shared_test_input = comm_test
 test_input = spec_test
-n_test = df_test.shape[0]
+# n_test = df_test.shape[0]
+# n_test = test_input[0].shape[0]
 
 test_pred = model([test_input, shared_test_input])
 
-print('test dataset loss:', (loss_fun(test_pred, y_test) / n_test).numpy())
+print('test dataset loss:', (loss_fun(test_pred, y_test)).numpy())
 #%%
