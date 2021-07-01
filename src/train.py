@@ -17,6 +17,7 @@ import numpy as np
 import pandas as pd
 from tqdm import tqdm
 import matplotlib.pyplot as plt
+from datetime import datetime
 import os
 #%% path
 # os.chdir("/Users/anseunghwan/Documents/GitHub/floating_pop")
@@ -204,7 +205,6 @@ for i in range(epochs):
         print(i+1,'iter loss:', loss.numpy()) 
     loss_history.append(loss.numpy())
 #%% weights save   
-from datetime import datetime
 date = datetime.today().strftime("%Y%m%d")
 model.save_weights('./assets/weights_{}/weights'.format(date))
 #%%
@@ -268,4 +268,23 @@ test_input = spec_test
 test_pred = model([test_input, shared_test_input])
 
 print('test dataset loss:', (loss_fun(test_pred, y_test)).numpy())
+#%%
+i = 0
+loss_M = [tf.math.reduce_mean(tf.math.square(tf.cast(tf.squeeze(test_pred[i]), tf.float32) - tf.cast(y_test[i], tf.float32))) for i in range(M)]
+maxi = np.argmax(np.array(loss_M))
+mini = np.argmin(np.array(loss_M))
+#%% plot
+fig, ax = plt.subplots(figsize=(10, 10))
+ax.scatter(test_pred[maxi], y_test[maxi])
+ax.set_title('prediction (maximum loss)')
+plt.savefig('./assets/pred_max.png')
+plt.show()
+plt.close()
+
+fig, ax = plt.subplots(figsize=(10, 10))
+ax.scatter(test_pred[mini], y_test[mini])
+ax.set_title('prediction (minimum loss)')
+plt.savefig('./assets/pred_min.png')
+plt.show()
+plt.close()
 #%%
