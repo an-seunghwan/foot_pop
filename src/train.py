@@ -117,6 +117,9 @@ y: 유동인구
 '''
 print('전처리')
 comm_data, spec_data, y = pop_prepro(df_train, admin_dict, temp_mean, temp_sd, dust_mean, dust_sd, squ_mean, squ_sd)
+
+# '''log 변환'''
+# y = [np.log(y[i] + 1e-8) for i in range(M)]
 #%% Adjacency matrix 
 coord = df_district.loc[:,['위도', '경도']].to_numpy()
 
@@ -173,7 +176,7 @@ hs1 = [d(h) for d, h in zip(dense_layers1, concat_h)]
 hs2 = [d(h) for d, h in zip(dense_layers2, hs1)]
 hs3 = [d(h) for d, h in zip(dense_layers3, hs2)]
 
-output_layers = [layers.Dense(1) for _ in range(M)]
+output_layers = [layers.Dense(1, activation='exponential') for _ in range(M)]
 
 # output = [d(h) for d, h in zip(output_layers, do3)]
 output = [d(h) for d, h in zip(output_layers, hs3)]
@@ -190,9 +193,9 @@ def loss_fun(y, y_pred):
     return loss_ 
 #%% 
 print('Training model')
-lr = 0.001
+lr = 0.0005
 optimizer = K.optimizers.RMSprop(learning_rate=lr)
-epochs = 10000
+epochs = 1000
 batch_size = 1024
 loss_history = []
 for i in range(epochs):
@@ -206,7 +209,7 @@ for i in range(epochs):
     grads = tape.gradient(loss, model.trainable_weights)
     optimizer.apply_gradients(zip(grads, model.trainable_weights)) 
     
-    if (i+1) % 10 == 0:
+    if (i+1) % 5 == 0:
         print(i+1,'iter loss:', loss.numpy()) 
     loss_history.append(loss.numpy())
 #%% weights save   
@@ -223,42 +226,49 @@ plt.close()
 input_layer = [layers.Input(x_input[0].shape[1]) for _ in range(M)]
 shared_input_layer = [layers.Input(shared_x_input[0].shape[1]) for _ in range(M)]
 
-shared_dense1 = layers.Dense(d1, kernel_regularizer=tf.keras.regularizers.l2(0.01), activation='relu')
-shared_dense2 = layers.Dense(d2, kernel_regularizer=tf.keras.regularizers.l2(0.01), activation='relu')
+shared_dense1 = layers.Dense(d1, kernel_regularizer=tf.keras.regularizers.l2(0.00), activation='swish')
+shared_dense2 = layers.Dense(d2, kernel_regularizer=tf.keras.regularizers.l2(0.00), activation='swish')
 
 shared_h = [shared_dense2(shared_dense1(x)) for x in shared_input_layer]
 
 # adjacency matrix embedding
-w_loc_dense = layers.Dense(d2, kernel_regularizer=tf.keras.regularizers.l2(0.01), activation='relu')
+w_loc_dense = layers.Dense(d2, kernel_regularizer=tf.keras.regularizers.l2(0.00), activation='swish')
 w_loc = w_loc_dense(adj_mat)
 w_loc = tf.split(w_loc, num_or_size_splits=M, axis=0)
 
 shared_h_geo = [tf.math.multiply(h, w) for h, w in zip(shared_h, w_loc)]
 concat_h = [layers.Concatenate(axis=1)([x, h]) for x, h in zip(input_layer, shared_h_geo)]
 
-dense_layers1 = [layers.Dense(d2, kernel_regularizer=tf.keras.regularizers.l2(0.01), activation='relu') for _ in range(M)]
-drop_out1 = [layers.Dropout(0.2, input_shape=(d2, )) for _ in range(M)]
+dense_layers1 = [layers.Dense(d2, kernel_regularizer=tf.keras.regularizers.l2(0.00), activation='swish') for _ in range(M)]
+# drop_out1 = [layers.Dropout(0.2) for _ in range(M)]
 
-dense_layers2 = [layers.Dense(d3, kernel_regularizer=tf.keras.regularizers.l2(0.01), activation='relu') for _ in range(M)]
-drop_out2 = [layers.Dropout(0.2, input_shape=(d3, )) for _ in range(M)]
+dense_layers2 = [layers.Dense(d3, kernel_regularizer=tf.keras.regularizers.l2(0.00), activation='swish') for _ in range(M)]
+# drop_out2 = [layers.Dropout(0.2) for _ in range(M)]
 
-dense_layers3 = [layers.Dense(d4, kernel_regularizer=tf.keras.regularizers.l2(0.01), activation='relu') for _ in range(M)]
-drop_out3 = [layers.Dropout(0.2, input_shape=(d4, )) for _ in range(M)]
+dense_layers3 = [layers.Dense(d4, kernel_regularizer=tf.keras.regularizers.l2(0.00), activation='swish') for _ in range(M)]
+# drop_out3 = [layers.Dropout(0.2) for _ in range(M)]
+
+# hs1 = [d(h) for d, h in zip(dense_layers1, concat_h)]
+# do1 = [d(h) for d, h in zip(drop_out1, hs1)]
+
+# hs2 = [d(h) for d, h in zip(dense_layers2, do1)]
+# do2 = [d(h) for d, h in zip(drop_out2, hs2)]
+
+# hs3 = [d(h) for d, h in zip(dense_layers3, do2)]
+# do3 = [d(h) for d, h in zip(drop_out3, hs3)]
 
 hs1 = [d(h) for d, h in zip(dense_layers1, concat_h)]
-do1 = [d(h) for d, h in zip(drop_out1, hs1)]
-
-hs2 = [d(h) for d, h in zip(dense_layers2, do1)]
-do2 = [d(h) for d, h in zip(drop_out2, hs2)]
-
-hs3 = [d(h) for d, h in zip(dense_layers3, do2)]
-do3 = [d(h) for d, h in zip(drop_out3, hs3)]
+hs2 = [d(h) for d, h in zip(dense_layers2, hs1)]
+hs3 = [d(h) for d, h in zip(dense_layers3, hs2)]
 
 output_layers = [layers.Dense(1) for _ in range(M)]
 
-output = [d(h) for d, h in zip(output_layers, do3)]
+# output = [d(h) for d, h in zip(output_layers, do3)]
+output = [d(h) for d, h in zip(output_layers, hs3)]
 
 model = K.Model(inputs=[input_layer, shared_input_layer], outputs=output)
+
+model.summary()
 #%%
 date = datetime.today().strftime("%Y%m%d")
 model.load_weights('./assets/weights_{}/weights'.format(date))
@@ -269,6 +279,9 @@ shared_test_input = comm_test
 test_input = spec_test
 # n_test = df_test.shape[0]
 # n_test = test_input[0].shape[0]
+
+# '''log 변환'''
+# y_test = [np.log(y_test[i] + 1e-8) for i in range(M)]
 
 test_pred = model([test_input, shared_test_input])
 
