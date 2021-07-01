@@ -138,40 +138,45 @@ d4 = 10
 input_layer = [layers.Input(x_input[0].shape[1]) for _ in range(M)]
 shared_input_layer = [layers.Input(shared_x_input[0].shape[1]) for _ in range(M)]
 
-shared_dense1 = layers.Dense(d1, kernel_regularizer=tf.keras.regularizers.l2(0.01), activation='relu')
-shared_dense2 = layers.Dense(d2, kernel_regularizer=tf.keras.regularizers.l2(0.02), activation='relu')
+shared_dense1 = layers.Dense(d1, kernel_regularizer=tf.keras.regularizers.l2(0.00), activation='swish')
+shared_dense2 = layers.Dense(d2, kernel_regularizer=tf.keras.regularizers.l2(0.00), activation='swish')
 
 shared_h = [shared_dense2(shared_dense1(x)) for x in shared_input_layer]
 
 # adjacency matrix embedding
-w_loc_dense = layers.Dense(d2, kernel_regularizer=tf.keras.regularizers.l2(0.02), activation='relu')
+w_loc_dense = layers.Dense(d2, kernel_regularizer=tf.keras.regularizers.l2(0.00), activation='swish')
 w_loc = w_loc_dense(adj_mat)
 w_loc = tf.split(w_loc, num_or_size_splits=M, axis=0)
 
 shared_h_geo = [tf.math.multiply(h, w) for h, w in zip(shared_h, w_loc)]
 concat_h = [layers.Concatenate(axis=1)([x, h]) for x, h in zip(input_layer, shared_h_geo)]
 
-dense_layers1 = [layers.Dense(d2, kernel_regularizer=tf.keras.regularizers.l2(0.02), activation='relu') for _ in range(M)]
-drop_out1 = [layers.Dropout(0.2, input_shape=(d2, )) for _ in range(M)]
+dense_layers1 = [layers.Dense(d2, kernel_regularizer=tf.keras.regularizers.l2(0.00), activation='swish') for _ in range(M)]
+# drop_out1 = [layers.Dropout(0.2) for _ in range(M)]
 
-dense_layers2 = [layers.Dense(d3, kernel_regularizer=tf.keras.regularizers.l2(0.02), activation='relu') for _ in range(M)]
-drop_out2 = [layers.Dropout(0.2, input_shape=(d3, )) for _ in range(M)]
+dense_layers2 = [layers.Dense(d3, kernel_regularizer=tf.keras.regularizers.l2(0.00), activation='swish') for _ in range(M)]
+# drop_out2 = [layers.Dropout(0.2) for _ in range(M)]
 
-dense_layers3 = [layers.Dense(d4, kernel_regularizer=tf.keras.regularizers.l2(0.02), activation='relu') for _ in range(M)]
-drop_out3 = [layers.Dropout(0.2, input_shape=(d4, )) for _ in range(M)]
+dense_layers3 = [layers.Dense(d4, kernel_regularizer=tf.keras.regularizers.l2(0.00), activation='swish') for _ in range(M)]
+# drop_out3 = [layers.Dropout(0.2) for _ in range(M)]
+
+# hs1 = [d(h) for d, h in zip(dense_layers1, concat_h)]
+# do1 = [d(h) for d, h in zip(drop_out1, hs1)]
+
+# hs2 = [d(h) for d, h in zip(dense_layers2, do1)]
+# do2 = [d(h) for d, h in zip(drop_out2, hs2)]
+
+# hs3 = [d(h) for d, h in zip(dense_layers3, do2)]
+# do3 = [d(h) for d, h in zip(drop_out3, hs3)]
 
 hs1 = [d(h) for d, h in zip(dense_layers1, concat_h)]
-do1 = [d(h) for d, h in zip(drop_out1, hs1)]
-
-hs2 = [d(h) for d, h in zip(dense_layers2, do1)]
-do2 = [d(h) for d, h in zip(drop_out2, hs2)]
-
-hs3 = [d(h) for d, h in zip(dense_layers3, do2)]
-do3 = [d(h) for d, h in zip(drop_out3, hs3)]
+hs2 = [d(h) for d, h in zip(dense_layers2, hs1)]
+hs3 = [d(h) for d, h in zip(dense_layers3, hs2)]
 
 output_layers = [layers.Dense(1) for _ in range(M)]
 
-output = [d(h) for d, h in zip(output_layers, do3)]
+# output = [d(h) for d, h in zip(output_layers, do3)]
+output = [d(h) for d, h in zip(output_layers, hs3)]
 
 model = K.Model(inputs=[input_layer, shared_input_layer], outputs=output)
 
@@ -186,8 +191,8 @@ def loss_fun(y, y_pred):
 #%% 
 print('Training model')
 lr = 0.001
-optimizer = K.optimizers.Adam(learning_rate=lr)
-epochs = 500
+optimizer = K.optimizers.RMSprop(learning_rate=lr)
+epochs = 10000
 batch_size = 1024
 loss_history = []
 for i in range(epochs):
@@ -219,25 +224,25 @@ input_layer = [layers.Input(x_input[0].shape[1]) for _ in range(M)]
 shared_input_layer = [layers.Input(shared_x_input[0].shape[1]) for _ in range(M)]
 
 shared_dense1 = layers.Dense(d1, kernel_regularizer=tf.keras.regularizers.l2(0.01), activation='relu')
-shared_dense2 = layers.Dense(d2, kernel_regularizer=tf.keras.regularizers.l2(0.02), activation='relu')
+shared_dense2 = layers.Dense(d2, kernel_regularizer=tf.keras.regularizers.l2(0.01), activation='relu')
 
 shared_h = [shared_dense2(shared_dense1(x)) for x in shared_input_layer]
 
 # adjacency matrix embedding
-w_loc_dense = layers.Dense(d2, kernel_regularizer=tf.keras.regularizers.l2(0.02), activation='relu')
+w_loc_dense = layers.Dense(d2, kernel_regularizer=tf.keras.regularizers.l2(0.01), activation='relu')
 w_loc = w_loc_dense(adj_mat)
 w_loc = tf.split(w_loc, num_or_size_splits=M, axis=0)
 
 shared_h_geo = [tf.math.multiply(h, w) for h, w in zip(shared_h, w_loc)]
 concat_h = [layers.Concatenate(axis=1)([x, h]) for x, h in zip(input_layer, shared_h_geo)]
 
-dense_layers1 = [layers.Dense(d2, kernel_regularizer=tf.keras.regularizers.l2(0.02), activation='relu') for _ in range(M)]
+dense_layers1 = [layers.Dense(d2, kernel_regularizer=tf.keras.regularizers.l2(0.01), activation='relu') for _ in range(M)]
 drop_out1 = [layers.Dropout(0.2, input_shape=(d2, )) for _ in range(M)]
 
-dense_layers2 = [layers.Dense(d3, kernel_regularizer=tf.keras.regularizers.l2(0.02), activation='relu') for _ in range(M)]
+dense_layers2 = [layers.Dense(d3, kernel_regularizer=tf.keras.regularizers.l2(0.01), activation='relu') for _ in range(M)]
 drop_out2 = [layers.Dropout(0.2, input_shape=(d3, )) for _ in range(M)]
 
-dense_layers3 = [layers.Dense(d4, kernel_regularizer=tf.keras.regularizers.l2(0.02), activation='relu') for _ in range(M)]
+dense_layers3 = [layers.Dense(d4, kernel_regularizer=tf.keras.regularizers.l2(0.01), activation='relu') for _ in range(M)]
 drop_out3 = [layers.Dropout(0.2, input_shape=(d4, )) for _ in range(M)]
 
 hs1 = [d(h) for d, h in zip(dense_layers1, concat_h)]
@@ -278,13 +283,13 @@ fig, ax = plt.subplots(figsize=(10, 10))
 ax.scatter(test_pred[maxi], y_test[maxi])
 ax.set_title('prediction (maximum loss)')
 plt.savefig('./assets/pred_max.png')
-plt.show()
+# plt.show()
 plt.close()
 
 fig, ax = plt.subplots(figsize=(10, 10))
 ax.scatter(test_pred[mini], y_test[mini])
 ax.set_title('prediction (minimum loss)')
 plt.savefig('./assets/pred_min.png')
-plt.show()
+# plt.show()
 plt.close()
 #%%
