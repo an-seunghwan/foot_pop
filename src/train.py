@@ -137,7 +137,7 @@ d2 = 30
 d3 = 20
 d4 = 10
 #%%
-def build_model(x_input, shared_x_input):
+def build_model(x_input, shared_x_input, batch_size):
     input_layer = [layers.Input(x_input[0].shape[1]) for _ in range(M)]
     shared_input_layer = [layers.Input(shared_x_input[0].shape[1]) for _ in range(M)]
 
@@ -150,9 +150,9 @@ def build_model(x_input, shared_x_input):
     w_loc_dense = layers.Dense(d2, kernel_regularizer=tf.keras.regularizers.l2(0.01), activation='relu')
     w_loc = w_loc_dense(adj_mat)
     w_loc = tf.split(w_loc, num_or_size_splits=M, axis=0)
-
-    shared_h_geo = [tf.math.multiply(h, w) for h, w in zip(shared_h, w_loc)]
-    concat_h = [layers.Concatenate(axis=1)([x, h]) for x, h in zip(input_layer, shared_h_geo)]
+    w_loc = [tf.tile(w_loc[i], (batch_size, 1)) for i in range(M)]
+    
+    concat_h = [layers.Concatenate(axis=1)([x, h, w]) for x, h, w in zip(input_layer, shared_h, w_loc)]
 
     dense_layers1 = [layers.Dense(d2, kernel_regularizer=tf.keras.regularizers.l2(0.01), activation='relu') for _ in range(M)]
     drop_out1 = [layers.Dropout(0.1) for _ in range(M)]
@@ -196,12 +196,13 @@ def loss_fun(y, y_pred):
 #%% 
 print('Training model')
 
-model = build_model(x_input, shared_x_input)
-
-lr = 0.0005
+lr = 0.001
 optimizer = K.optimizers.RMSprop(learning_rate=lr)
 epochs = 1000
 batch_size = 1024
+
+model = build_model(x_input, shared_x_input, batch_size)
+
 loss_history = []
 for i in range(epochs):
     idx = np.random.choice(range(x_input[0].shape[0]), batch_size)
