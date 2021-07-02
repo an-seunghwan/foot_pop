@@ -132,7 +132,7 @@ shared_x_input = comm_data
 n = df_train.shape[0] 
 
 # hidden layer unit number
-d1 = 40
+d1 = 60
 d2 = 30 
 d3 = 20
 d4 = 10
@@ -152,7 +152,7 @@ def build_model(x_input, shared_x_input, batch_size):
     w_loc = tf.split(w_loc, num_or_size_splits=M, axis=0)
     w_loc = [tf.tile(w_loc[i], (batch_size, 1)) for i in range(M)]
     
-    concat_h = [layers.Concatenate(axis=1)([x, h, w]) for x, h, w in zip(input_layer, shared_h, w_loc)]
+    concat_h = [tf.concat([x, h, w], axis=-1) for x, h, w in zip(input_layer, shared_h, w_loc)]
 
     dense_layers1 = [layers.Dense(d2, kernel_regularizer=tf.keras.regularizers.l2(0.01), activation='relu') for _ in range(M)]
     drop_out1 = [layers.Dropout(0.1) for _ in range(M)]
@@ -176,7 +176,7 @@ def build_model(x_input, shared_x_input, batch_size):
     # hs2 = [d(h) for d, h in zip(dense_layers2, hs1)]
     # hs3 = [d(h) for d, h in zip(dense_layers3, hs2)]
 
-    output_layers = [layers.Dense(1, activation='relu') for _ in range(M)]
+    output_layers = [layers.Dense(1, activation='exponential') for _ in range(M)]
 
     output = [d(h) for d, h in zip(output_layers, do3)]
     # output = [d(h) for d, h in zip(output_layers, hs3)]
@@ -228,10 +228,6 @@ ax.set_title('loss')
 plt.savefig('./assets/weights_{}/loss.png'.format(date))
 # plt.show()
 plt.close()
-#%% load model
-model = build_model(x_input, shared_x_input)
-date = datetime.today().strftime("%Y%m%d")
-model.load_weights('./assets/weights_{}/weights'.format(date))
 #%% Test
 comm_test, spec_test, y_test = pop_prepro(df_test, admin_dict, temp_mean, temp_sd, dust_mean, dust_sd, squ_mean, squ_sd)
 
@@ -242,8 +238,12 @@ test_input = spec_test
 
 # '''log 변환'''
 # y_test = [np.log(y_test[i] + 1e-8) for i in range(M)]
-
-test_pred = model.predict([test_input, shared_test_input])
+#%% load model
+model = build_model(test_input, shared_test_input, len(test_input))
+date = datetime.today().strftime("%Y%m%d")
+model.load_weights('./assets/weights_{}/weights'.format(date))
+#%%
+test_pred = model([test_input, shared_test_input])
 
 print('test dataset loss:', (loss_fun(test_pred, y_test)).numpy())
 #%%
