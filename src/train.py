@@ -12,7 +12,6 @@ print(device_lib.list_local_devices())
 #%%
 from sklearn.model_selection import StratifiedShuffleSplit
 from sklearn.neighbors import kneighbors_graph
-# from matplotlib import pyplot as plt
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
@@ -142,26 +141,26 @@ def build_model(x_input, shared_x_input):
     input_layer = [layers.Input(x_input[0].shape[1]) for _ in range(M)]
     shared_input_layer = [layers.Input(shared_x_input[0].shape[1]) for _ in range(M)]
 
-    shared_dense1 = layers.Dense(d1, kernel_regularizer=tf.keras.regularizers.l2(0.01), activation='swish')
-    shared_dense2 = layers.Dense(d2, kernel_regularizer=tf.keras.regularizers.l2(0.01), activation='swish')
+    shared_dense1 = layers.Dense(d1, kernel_regularizer=tf.keras.regularizers.l2(0.01), activation='relu')
+    shared_dense2 = layers.Dense(d2, kernel_regularizer=tf.keras.regularizers.l2(0.01), activation='relu')
 
     shared_h = [shared_dense2(shared_dense1(x)) for x in shared_input_layer]
 
     # adjacency matrix embedding
-    w_loc_dense = layers.Dense(d2, kernel_regularizer=tf.keras.regularizers.l2(0.01), activation='swish')
+    w_loc_dense = layers.Dense(d2, kernel_regularizer=tf.keras.regularizers.l2(0.01), activation='relu')
     w_loc = w_loc_dense(adj_mat)
     w_loc = tf.split(w_loc, num_or_size_splits=M, axis=0)
 
     shared_h_geo = [tf.math.multiply(h, w) for h, w in zip(shared_h, w_loc)]
     concat_h = [layers.Concatenate(axis=1)([x, h]) for x, h in zip(input_layer, shared_h_geo)]
 
-    dense_layers1 = [layers.Dense(d2, kernel_regularizer=tf.keras.regularizers.l2(0.01), activation='swish') for _ in range(M)]
+    dense_layers1 = [layers.Dense(d2, kernel_regularizer=tf.keras.regularizers.l2(0.01), activation='relu') for _ in range(M)]
     drop_out1 = [layers.Dropout(0.1) for _ in range(M)]
 
-    dense_layers2 = [layers.Dense(d3, kernel_regularizer=tf.keras.regularizers.l2(0.01), activation='swish') for _ in range(M)]
+    dense_layers2 = [layers.Dense(d3, kernel_regularizer=tf.keras.regularizers.l2(0.01), activation='relu') for _ in range(M)]
     drop_out2 = [layers.Dropout(0.1) for _ in range(M)]
 
-    dense_layers3 = [layers.Dense(d4, kernel_regularizer=tf.keras.regularizers.l2(0.01), activation='swish') for _ in range(M)]
+    dense_layers3 = [layers.Dense(d4, kernel_regularizer=tf.keras.regularizers.l2(0.01), activation='relu') for _ in range(M)]
     drop_out3 = [layers.Dropout(0.1) for _ in range(M)]
 
     hs1 = [d(h) for d, h in zip(dense_layers1, concat_h)]
@@ -177,7 +176,7 @@ def build_model(x_input, shared_x_input):
     # hs2 = [d(h) for d, h in zip(dense_layers2, hs1)]
     # hs3 = [d(h) for d, h in zip(dense_layers3, hs2)]
 
-    output_layers = [layers.Dense(1, activation='exponential') for _ in range(M)]
+    output_layers = [layers.Dense(1, activation='relu') for _ in range(M)]
 
     output = [d(h) for d, h in zip(output_layers, do3)]
     # output = [d(h) for d, h in zip(output_layers, hs3)]
@@ -225,7 +224,7 @@ model.save_weights('./assets/weights_{}/weights'.format(date))
 fig, ax = plt.subplots(figsize=(9, 4))
 ax.plot(loss_history)
 ax.set_title('loss')
-plt.savefig('./assets/loss.png')
+plt.savefig('./assets/weights_{}/loss.png'.format(date))
 # plt.show()
 plt.close()
 #%% load model
@@ -255,14 +254,14 @@ mini = np.argmin(np.array(loss_M))
 fig, ax = plt.subplots(figsize=(10, 10))
 ax.scatter(test_pred[maxi], y_test[maxi])
 ax.set_title('prediction (maximum loss)')
-plt.savefig('./assets/pred_max.png')
+plt.savefig('./assets/weights_{}/pred_max.png'.format(date))
 # plt.show()
 plt.close()
 
 fig, ax = plt.subplots(figsize=(10, 10))
 ax.scatter(test_pred[mini], y_test[mini])
 ax.set_title('prediction (minimum loss)')
-plt.savefig('./assets/pred_min.png')
+plt.savefig('./assets/weights_{}/pred_min.png'.format(date))
 # plt.show()
 plt.close()
 #%%
